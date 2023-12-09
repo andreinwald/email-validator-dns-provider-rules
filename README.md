@@ -3,7 +3,13 @@ Smart Email Validator with checking DNS MX records and email providers rules (li
 ```shell
 npm install email-validator-dns-provider-rules --save
 ```
+```js
+import { isValidEmail } from "email-validator-dns-provider-rules";
 
+if (!await isValidEmail('someone@gmail.com')) {
+  alert('Please correct your email');
+}
+```
 
 
 ## Testing
