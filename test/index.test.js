@@ -1,5 +1,12 @@
 import {isValidEmail} from '../src';
 
 
-test('some run', () => isValidEmail('someone@gmail.com').then(result => expect(result).toBe(true)));
-
+let emails = {
+    'someone@gmail.com': true,
+    'som_e-one@gmail.com': false,
+    'someone@yahoo.com': true,
+    'som_e-+one@yahoo.com': false,
+};
+for (let email in emails) {
+    test(email, () => isValidEmail(email).then(result => expect(result).toBe(emails[email])));
+}
