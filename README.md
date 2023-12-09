@@ -1,5 +1,8 @@
-# email-validator-dns-provider-rules
-Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)
+# Email-validator-dns-provider-rules
+Smart Email Validator with checking DNS MX records and email providers rules (like Gmail).<br>
+Works in browser. DNS query by DOH.
+
+# Usage
 ```shell
 npm install email-validator-dns-provider-rules --save
 ```
@@ -12,7 +15,7 @@ if (!await isValidEmail('someone@gmail.com')) {
 ```
 
 
-## Testing
+# Testing
 ```shell
 npm test
 ```
