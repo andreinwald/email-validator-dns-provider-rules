@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)",
   "main": "src/index.js",
+  "dependencies": {
+    "psl": "^1.9.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andreinwald/email-validator-dns-provider-rules.git"
