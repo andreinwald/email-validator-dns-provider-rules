@@ -1,0 +1,20 @@
+{
+  "name": "email-validator-dns-provider-rules",
+  "version": "1.0.0",
+  "description": "Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andreinwald/email-validator-dns-provider-rules.git"
+  },
+  "keywords": [
+    "email",
+    "validator"
+  ],
+  "author": "https://github.com/andreinwald",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andreinwald/email-validator-dns-provider-rules/issues"
+  },
+  "homepage": "https://github.com/andreinwald/email-validator-dns-provider-rules#readme"
+}
