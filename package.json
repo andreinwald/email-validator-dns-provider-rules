@@ -3,8 +3,15 @@
   "version": "1.0.0",
   "description": "Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)",
   "main": "src/index.js",
+  "type": "module",
   "dependencies": {
     "psl": "^1.9.0"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
   },
   "repository": {
     "type": "git",

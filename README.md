@@ -1,6 +1,12 @@
 # email-validator-dns-provider-rules
 Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)
 
+## Testing
+```shell
+npm test
+```
+
+
 
 Email rules:
 - https://en.wikipedia.org/wiki/Email_address#Examples

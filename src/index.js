@@ -1,6 +1,8 @@
+import psl from "psl";
 let email = 'somebody@gmail.com';
 
-async function validateEmail(email) {
+
+export async function isValidEmail(email) {
     let regexMatch = Boolean(String(email)
         .toLowerCase()
         .match(
@@ -42,13 +44,3 @@ async function getMxRecords(domain) {
             return result;
         });
 }
-
-
-console.time('total');
-let result = validateEmail(email);
-validateEmail(email)
-    .then(result => {
-            console.timeEnd('total');
-            console.log(result);
-        }
-    );
