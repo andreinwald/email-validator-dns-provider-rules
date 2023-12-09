@@ -1,14 +1,13 @@
 import psl from "psl";
-let email = 'somebody@gmail.com';
 
+const providerRules = {
+    'google.com': /[a-z0-9.+]{6,30}/, // https://support.google.com/mail/answer/9211434?hl=en
+    'google_workplace': /[a-z0-9.\-_'+]{1,64}/, // https://support.google.com/a/answer/9193374?hl=en
+}
 
 export async function isValidEmail(email) {
-    let regexMatch = Boolean(String(email)
-        .toLowerCase()
-        .match(
-            // /^\S+@\S+\.\S+$/
-            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
-        ));
+    email = String(email).toLowerCase();
+    let regexMatch = Boolean(email.match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/));
     if (!regexMatch) {
         return false;
     }
@@ -16,16 +15,23 @@ export async function isValidEmail(email) {
     if (parts.length > 2) {
         return false;
     }
+    let username = parts[0];
     let domain = parts[1];
-    let mxRecords = await getMxRecords(domain);
-    if (!mxRecords) {
+    let mxDomains = await getMxDomains(domain);
+    if (!mxDomains) {
         return false;
     }
+    for (let mxDomain of mxDomains) {
+        if (!checkProviderRules(username, domain, mxDomain)) {
+            return false;
+        }
+    }
+    console.log(mxDomains)
     return true;
 }
 
-async function getMxRecords(domain) {
-    return fetch('https://doh.sb/dns-query?type=MX&name=' + domain)
+async function getMxDomains(emailDomain) {
+    return fetch('https://doh.sb/dns-query?type=MX&name=' + emailDomain)
         .catch(() => {
             return false;
         })
@@ -39,8 +45,28 @@ async function getMxRecords(domain) {
             }
             let result = [];
             data['Answer'].map(row => {
-                result.push(row.data.substring(row.data.indexOf(' ') + 1))
+                let mxDomain = row.data.substring(row.data.indexOf(' ') + 1);
+                let parsed = psl.parse(mxDomain);
+                if (!parsed || !parsed.domain) {
+                    return;
+                }
+                if (!result.includes(parsed.domain)) {
+                    result.push(parsed.domain);
+                }
             });
+            if (!result.length) {
+                return false;
+            }
             return result;
         });
+}
+
+function checkProviderRules(username, domain, mxDomain) {
+    if (mxDomain === 'google.com' && domain !== 'gmail.com') {
+        mxDomain = 'google_workplace';
+    }
+    if (!providerRules[mxDomain]) {
+        return true;
+    }
+    return providerRules[mxDomain].test(username);
 }
