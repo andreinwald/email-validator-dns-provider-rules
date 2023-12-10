@@ -1,6 +1,9 @@
 # Email-validator-dns-provider-rules
 Smart Email Validator with checking DNS MX records and email providers rules (like Gmail).<br>
 Works in browser. DNS query by DOH.
+<br>
+
+> Based on real data, 99.9999% of all working emails in a world contains only symbols "a-z","0-9",".","_","-","+" before "@" part.
 
 # Usage
 ```shell
