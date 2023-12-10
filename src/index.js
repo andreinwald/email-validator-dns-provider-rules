@@ -8,17 +8,17 @@ const providerRules = {
 
 export async function isValidEmail(email) {
     email = String(email).toLowerCase();
-    let regexMatch = Boolean(email.match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/));
-    if (!regexMatch) {
-        console.log('not regex match');
-        return false;
-    }
     let parts = email.split('@');
-    if (parts.length > 2) {
+    if (!parts || parts.length > 2) {
+        console.log('amount of @ symbols');
         return false;
     }
     let username = parts[0];
     let domain = parts[1];
+    if (/^[a-z0-9._\-+]+$/.test(username) === false) {
+        console.log('invalid symbols in username');
+        return false;
+    }
     let mxDomains = await getMxDomains(domain);
     console.log(mxDomains);
     if (!mxDomains) {
