@@ -1,9 +1,10 @@
 import psl from "psl";
+import mx_domains_cache from "./mx_domains_cache.js";
 
-const providerRules = {
-    'google.com': /^[a-z0-9.+]{6,30}$/, // https://support.google.com/mail/answer/9211434?hl=en
-    'google_workplace': /^[a-z0-9.\-_'+]{1,64}$/, // https://support.google.com/a/answer/9193374?hl=en
-    'yahoodns.net': /^[a-z0-9._]{4,33}$/, // https://login.yahoo.com/account/create
+const mainRule = /^[a-z0-9._\-+]+$/
+const providerRestricted = {
+    'google.com': /[_\-]/, // https://support.google.com/mail/answer/9211434?hl=en
+    'yahoodns.net': /\+/, // https://login.yahoo.com/account/create
 }
 
 export async function isValidEmail(email) {
@@ -15,7 +16,7 @@ export async function isValidEmail(email) {
     }
     let username = parts[0];
     let domain = parts[1];
-    if (/^[a-z0-9._\-+]+$/.test(username) === false) {
+    if (mainRule.test(username) === false) {
         console.log('invalid symbols in username');
         return false;
     }
@@ -35,6 +36,13 @@ export async function isValidEmail(email) {
 }
 
 export async function getMxDomains(emailDomain) {
+    if (mx_domains_cache[emailDomain]) {
+        console.log('from cache');
+        return new Promise((resolve) => {
+            resolve([mx_domains_cache[emailDomain]]);
+        });
+    }
+
     return fetch('https://doh.sb/dns-query?type=MX&name=' + emailDomain)
         .catch(() => {
             return false;
@@ -70,9 +78,12 @@ function checkProviderRules(username, domain, mxDomain) {
     if (mxDomain === 'google.com' && domain !== 'gmail.com') {
         mxDomain = 'google_workplace';
     }
-    if (!providerRules[mxDomain]) {
+    if (domain === 'gmail.com' && username.includes('+')) {
+        username = username.substring(0, username.indexOf('+'));
+    }
+    if (!providerRestricted[mxDomain]) {
         console.log('nothing in provider rules', username, domain, mxDomain)
         return true;
     }
-    return providerRules[mxDomain].test(username);
+    return !providerRestricted[mxDomain].test(username);
 }
