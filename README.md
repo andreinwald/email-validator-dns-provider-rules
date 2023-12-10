@@ -3,7 +3,13 @@ Smart Email Validator with checking DNS MX records and email providers rules (li
 Works in browser. DNS query by DOH.
 <br>
 
-> Based on real data, 99.9999% of all working emails in a world contains only symbols "a-z","0-9",".","_","-","+" before "@" part.
+## Whats special
+- more strict and real validation for symbols before "@"
+- check if domain can really receive emails (DNS MX record)
+- everything works from browser!
+
+
+
 
 # Usage
 ```shell
@@ -24,6 +30,7 @@ npm test
 ```
 
 
+> Based on real data, 99.9999% of all working emails in a world contains only symbols "a-z","0-9",".","_","-","+" before "@" part.
 
 Email rules:
 - https://en.wikipedia.org/wiki/Email_address#Examples
