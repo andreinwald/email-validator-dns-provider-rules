@@ -1,7 +1,7 @@
 {
   "name": "email-validator-dns-provider-rules",
-  "version": "1.0.2",
-  "description": "Smart Email Validator with checking DNS MX records and email providers rules (like Gmail)",
+  "version": "1.0.3",
+  "description": "Strict Email Validator with checking DNS MX records and email providers rules in browser!",
   "main": "src/index.js",
   "type": "module",
   "dependencies": {
