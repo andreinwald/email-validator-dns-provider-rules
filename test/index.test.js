@@ -3,7 +3,8 @@ import {isValidEmail} from '../src';
 
 let emails = {
     'someone@gmail.com': true,
-    'som_e-one@gmail.com': false,
+    'some-one@gmail.com': false,
+    'some_one@gmail.com': false,
     'someone@yahoo.com': true,
     'some+one@yahoo.com': false,
 };
