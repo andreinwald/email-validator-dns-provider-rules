@@ -6,12 +6,14 @@ const providerRestricted = {
     'google.com': /[_\-]/, // https://support.google.com/mail/answer/9211434?hl=en
     'yahoodns.net': /\+/, // https://login.yahoo.com/account/create
 }
-
 const dnsOverHttpServers = [
     'https://dns.google/resolve',
     'https://cloudflare-dns.com/dns-query',
     'https://doh.sb/dns-query',
 ];
+const blocklistDomainsExample = [
+    'hotnail.com', // too similar to hotmail
+]
 
 export async function isValidEmail(email) {
     email = String(email).toLowerCase();
@@ -20,17 +22,25 @@ export async function isValidEmail(email) {
         console.log('amount of @ symbols');
         return false;
     }
-    let [username, domain] = parts[0];
+    let [username, domain] = parts;
     if (mainRule.test(username) === false) {
         console.log('invalid symbols in username');
         return false;
     }
     let mxDomains = await getMxDomains(domain);
-    if (!mxDomains) {
+    if (mxDomains === false) {
+        // problem with mx request - better pass next
+        return true;
+    }
+    if (!mxDomains.length) {
         console.log('no mxDomains');
         return false;
     }
     for (let mxDomain of mxDomains) {
+        if (blocklistDomainsExample.includes(mxDomain) || blocklistDomainsExample.includes(domain)) {
+            console.log('domain in blocklist');
+            return false;
+        }
         if (!checkProviderRules(username, domain, mxDomain)) {
             console.log('not by vendor rule', mxDomain);
             return false;
@@ -62,12 +72,16 @@ export async function getMxDomains(emailDomain) {
     }
     let response = await getMxRecords(emailDomain);
     if (!response || !response.ok) {
+        console.log('problem with mx request ' + emailDomain);
         return false;
     }
     let data = await response.json();
-    if (!data || !data['Answer'] || Array.isArray(!data['Answer']) || !data['Answer'].length) {
-        console.log('problems with data', data);
+    if (!data || !data['Status']) {
+        console.log('problem with mx request ' + emailDomain, data);
         return false;
+    }
+    if (!data['Answer'] || !data['Answer'].length) {
+        return [];
     }
     let result = [];
     data['Answer'].map(row => {
@@ -80,15 +94,13 @@ export async function getMxDomains(emailDomain) {
             result.push(parsed.domain);
         }
     });
-    if (!result.length) {
-        return false;
-    }
     return result;
 }
 
 async function getMxRecords(emailDomain, retry = 3) {
     let iteration = 0;
     let excludeResolvers = [];
+
     async function request() {
         let notTriedDomains = dnsOverHttpServers.filter(x => !excludeResolvers.includes(x));
         let resolver = notTriedDomains[(Math.floor(Math.random() * notTriedDomains.length))];
@@ -104,6 +116,7 @@ async function getMxRecords(emailDomain, retry = 3) {
         }
         return response;
     }
+
     return await request();
 }
 
