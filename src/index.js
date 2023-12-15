@@ -74,12 +74,12 @@ function checkProviderRules(username, domain, mxDomain) {
 }
 
 export async function getMxDomains(emailDomain, dohProvider = null) {
-    // if (mx_domains_cache[emailDomain]) {
-    //     console.log('from cache');
-    //     return new Promise((resolve) => {
-    //         resolve([mx_domains_cache[emailDomain]]);
-    //     });
-    // }
+    if (mx_domains_cache[emailDomain]) {
+        console.log('from cache');
+        return new Promise((resolve) => {
+            resolve([mx_domains_cache[emailDomain]]);
+        });
+    }
     let response = await getMxRecords(emailDomain, dohProvider);
     if (!response || !response.ok) {
         console.log('problem with mx request ' + emailDomain);
