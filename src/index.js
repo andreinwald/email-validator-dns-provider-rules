@@ -1,21 +1,23 @@
 import psl from "psl";
 import mx_domains_cache from "./mx_domains_cache.js";
 
-const mainRule = /^[a-z0-9._\-+]+$/
-const providerRestricted = {
+const USERNAME_MAIN_RULE = /^[a-z0-9._\-+]{1,64}$/
+const DOMAIN_RULE = /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/
+const USERNAME_PROVIDER_RULES = {
     'google.com': /[_\-]/, // https://support.google.com/mail/answer/9211434?hl=en
     'yahoodns.net': /\+/, // https://login.yahoo.com/account/create
+    // hotmail rules same as mainRule
 }
-const dnsOverHttpServers = [
+const DNS_OVER_HTTPS_PROVIDERS = [
     'https://dns.google/resolve',
     'https://cloudflare-dns.com/dns-query',
     'https://doh.sb/dns-query',
 ];
-const blocklistDomainsExample = [
+const BLOCKLIST_DOMAINS_EXAMPLE = [
     'hotnail.com', // too similar to hotmail
 ]
 
-export async function isValidEmail(email) {
+export async function isValidEmail(email, blocklistDomains = null, dohProvider = null) {
     email = String(email).toLowerCase();
     let parts = email.split('@');
     if (!parts || parts.length > 2) {
@@ -23,11 +25,15 @@ export async function isValidEmail(email) {
         return false;
     }
     let [username, domain] = parts;
-    if (mainRule.test(username) === false) {
-        console.log('invalid symbols in username');
+    if (USERNAME_MAIN_RULE.test(username) === false) {
+        console.log('invalid symbols in username or length');
         return false;
     }
-    let mxDomains = await getMxDomains(domain);
+    if (DOMAIN_RULE.test(domain) === false) {
+        console.log('invalid domain');
+        return false;
+    }
+    let mxDomains = await getMxDomains(domain, dohProvider);
     if (mxDomains === false) {
         // problem with mx request - better pass next
         return true;
@@ -37,7 +43,11 @@ export async function isValidEmail(email) {
         return false;
     }
     for (let mxDomain of mxDomains) {
-        if (blocklistDomainsExample.includes(mxDomain) || blocklistDomainsExample.includes(domain)) {
+        if (BLOCKLIST_DOMAINS_EXAMPLE.includes(mxDomain) || BLOCKLIST_DOMAINS_EXAMPLE.includes(domain)) {
+            console.log('domain in blocklist');
+            return false;
+        }
+        if (blocklistDomains !== null && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
             console.log('domain in blocklist');
             return false;
         }
@@ -56,27 +66,27 @@ function checkProviderRules(username, domain, mxDomain) {
     if (domain === 'gmail.com' && username.includes('+')) {
         username = username.substring(0, username.indexOf('+'));
     }
-    if (!providerRestricted[mxDomain]) {
+    if (!USERNAME_PROVIDER_RULES[mxDomain]) {
         console.log('nothing in provider rules', username, domain, mxDomain)
         return true;
     }
-    return !providerRestricted[mxDomain].test(username);
+    return !USERNAME_PROVIDER_RULES[mxDomain].test(username);
 }
 
-export async function getMxDomains(emailDomain) {
-    if (mx_domains_cache[emailDomain]) {
-        console.log('from cache');
-        return new Promise((resolve) => {
-            resolve([mx_domains_cache[emailDomain]]);
-        });
-    }
-    let response = await getMxRecords(emailDomain);
+export async function getMxDomains(emailDomain, dohProvider = null) {
+    // if (mx_domains_cache[emailDomain]) {
+    //     console.log('from cache');
+    //     return new Promise((resolve) => {
+    //         resolve([mx_domains_cache[emailDomain]]);
+    //     });
+    // }
+    let response = await getMxRecords(emailDomain, dohProvider);
     if (!response || !response.ok) {
         console.log('problem with mx request ' + emailDomain);
         return false;
     }
     let data = await response.json();
-    if (!data || !data['Status']) {
+    if (!data || !('Status' in data)) {
         console.log('problem with mx request ' + emailDomain, data);
         return false;
     }
@@ -97,12 +107,18 @@ export async function getMxDomains(emailDomain) {
     return result;
 }
 
-async function getMxRecords(emailDomain, retry = 3) {
+async function getMxRecords(emailDomain, dohProvider = null, retry = 3) {
     let iteration = 0;
     let excludeResolvers = [];
 
+    if (dohProvider !== null && dohProvider.length > 3) {
+        return fetch(dohProvider + `?type=MX&name=` + encodeURIComponent(emailDomain), {
+            headers: {accept: 'application/dns-json'}
+        });
+    }
+
     async function request() {
-        let notTriedDomains = dnsOverHttpServers.filter(x => !excludeResolvers.includes(x));
+        let notTriedDomains = DNS_OVER_HTTPS_PROVIDERS.filter(x => !excludeResolvers.includes(x));
         let resolver = notTriedDomains[(Math.floor(Math.random() * notTriedDomains.length))];
         excludeResolvers.push(resolver);
         let response = await fetch(resolver + `?type=MX&name=` + encodeURIComponent(emailDomain), {
