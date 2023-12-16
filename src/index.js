@@ -16,21 +16,39 @@ const DNS_OVER_HTTPS_PROVIDERS = [
 const BLOCKLIST_DOMAINS_EXAMPLE = [
     'hotnail.com', // too similar to hotmail
 ]
+export const INVALID_REASON_AMOUNT_OF_AT = 1;
+export const INVALID_REASON_USERNAME_GENERAL_RULES = 2;
+export const INVALID_REASON_DOMAIN_GENERAL_RULES = 3;
+export const INVALID_REASON_NO_DNS_MX_RECORDS = 4;
+export const INVALID_REASON_DOMAIN_IN_BLOCKLIST = 5;
+export const INVALID_REASON_USERNAME_VENDOR_RULES = 6;
+
+const INVALID_REASON_TEXT = {
+    INVALID_REASON_AMOUNT_OF_AT: 'no @ symbol or too many of them',
+    INVALID_REASON_USERNAME_GENERAL_RULES: 'invalid username before @ by general email rules',
+    INVALID_REASON_DOMAIN_GENERAL_RULES: 'invalid domain after @ by general domain rules',
+    INVALID_REASON_NO_DNS_MX_RECORDS: 'domain after @ has no DNS MX records',
+    INVALID_REASON_DOMAIN_IN_BLOCKLIST: 'email domain is in blocklist',
+    INVALID_REASON_USERNAME_VENDOR_RULES: 'invalid username before @ by domain vendor rules',
+}
+let lastReasonId = false;
+
 
 export async function isValidEmail(email, blocklistDomains = null, dohProvider = null) {
+    lastReasonId = false;
     email = String(email).toLowerCase();
     let parts = email.split('@');
     if (!parts || parts.length > 2) {
-        console.log('amount of @ symbols');
+        lastReasonId = INVALID_REASON_AMOUNT_OF_AT;
         return false;
     }
     let [username, domain] = parts;
     if (USERNAME_MAIN_RULE.test(username) === false) {
-        console.log('invalid symbols in username or length');
+        lastReasonId = INVALID_REASON_USERNAME_GENERAL_RULES;
         return false;
     }
     if (DOMAIN_RULE.test(domain) === false) {
-        console.log('invalid domain');
+        lastReasonId = INVALID_REASON_DOMAIN_GENERAL_RULES;
         return false;
     }
     let mxDomains = await getMxDomains(domain, dohProvider);
@@ -39,24 +57,32 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
         return true;
     }
     if (!mxDomains.length) {
-        console.log('no mxDomains');
+        lastReasonId = INVALID_REASON_NO_DNS_MX_RECORDS;
         return false;
     }
     for (let mxDomain of mxDomains) {
         if (BLOCKLIST_DOMAINS_EXAMPLE.includes(mxDomain) || BLOCKLIST_DOMAINS_EXAMPLE.includes(domain)) {
-            console.log('domain in blocklist');
+            lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
         if (blocklistDomains !== null && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
-            console.log('domain in blocklist');
+            lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
         if (!checkProviderRules(username, domain, mxDomain)) {
-            console.log('not by vendor rule', mxDomain);
+            lastReasonId = INVALID_REASON_USERNAME_VENDOR_RULES;
             return false;
         }
     }
     return true;
+}
+
+export function getLastReasonId() {
+    return lastReasonId;
+}
+
+export function getLastReasonText() {
+    return INVALID_REASON_TEXT[lastReasonId] ?? false;
 }
 
 function checkProviderRules(username, domain, mxDomain) {
@@ -66,16 +92,14 @@ function checkProviderRules(username, domain, mxDomain) {
     if (domain === 'gmail.com' && username.includes('+')) {
         username = username.substring(0, username.indexOf('+'));
     }
-    if (!USERNAME_PROVIDER_RULES[mxDomain]) {
-        console.log('nothing in provider rules', username, domain, mxDomain)
-        return true;
+    if (USERNAME_PROVIDER_RULES[mxDomain]) {
+        return USERNAME_PROVIDER_RULES[mxDomain].test(username) === false;
     }
-    return !USERNAME_PROVIDER_RULES[mxDomain].test(username);
+    return true;
 }
 
 export async function getMxDomains(emailDomain, dohProvider = null) {
     if (mx_domains_cache[emailDomain]) {
-        console.log('from cache');
         return new Promise((resolve) => {
             resolve([mx_domains_cache[emailDomain]]);
         });
