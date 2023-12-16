@@ -76,11 +76,11 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
     return true;
 }
 
-export function getLastReasonId() {
+export function getLastInvalidReasonId() {
     return lastReasonId;
 }
 
-export function getLastReasonText() {
+export function getLastInvalidText() {
     return INVALID_REASON_TEXT[lastReasonId] ?? false;
 }
 
