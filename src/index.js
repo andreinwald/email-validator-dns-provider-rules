@@ -1,4 +1,3 @@
-import psl from "psl";
 import mx_domains_cache from "./mx_domains_cache.js";
 
 const USERNAME_MAIN_RULE = /^[a-z0-9._\-+]{1,64}$/
@@ -119,16 +118,18 @@ export async function getMxDomains(emailDomain, dohProvider = null) {
     }
     let result = [];
     data['Answer'].map(row => {
-        let mxDomain = row.data.substring(row.data.indexOf(' ') + 1);
-        let parsed = psl.parse(mxDomain);
-        if (!parsed || !parsed.domain) {
-            return;
-        }
-        if (!result.includes(parsed.domain)) {
-            result.push(parsed.domain);
+        let mxDomain = row.data.substring(row.data.indexOf(' ') + 1).trim().toLowerCase();
+        mxDomain = mxDomain.replace(/\.*$/, '');
+        let parts = mxDomain.split('.');
+        if (parts.length < 3) {
+            result.push(mxDomain);
+        } else {
+            result.push(parts.slice(parts.length - 2).join('.'));
+            result.push(parts.slice(parts.length - 3).join('.'));
         }
     });
-    return result;
+    let unique = result.filter((value, index, array) => array.indexOf(value) === index);
+    return unique;
 }
 
 async function getMxRecords(emailDomain, dohProvider = null, retry = 3) {
