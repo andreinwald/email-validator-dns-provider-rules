@@ -5,7 +5,7 @@
 - stricter specific rules for ESP like gmail, yahoo, etc
 - check if domain really exist and works
 - check if domain can receive emails (DNS MX record)
-- everything works from browser! (DNS query by DOH)
+- everything works in browser! (DNS query by DOH)
 
 **Invalid emails that other validators pass:**
 
