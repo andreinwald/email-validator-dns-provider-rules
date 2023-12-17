@@ -2,29 +2,56 @@
 **Strict Email Validator** with checking DNS MX records and email providers rules (like Gmail).<br>
 
 - more strict and real validation for symbols before "@"
-- check if domain can really receive emails (DNS MX record)
+- stricter specific rules for ESP like gmail, yahoo, etc
+- check if domain really exist and works
+- check if domain can receive emails (DNS MX record)
 - everything works from browser! (DNS query by DOH)
 
 **Invalid emails that other validators pass:**
 
-| email                         | reason                                                                                |
-|-------------------------------|---------------------------------------------------------------------------------------|
-| som_e-one@gmail.com           | Gmail don't allows "_" and "-" symbols                                                | 
-| someone@8avymt4v93mvt3t03.com | "8avymt4v93mvt3t03.com" isn't real domain and dont have DNS MX records                | 
-| s!o#m$e%o^n&e@realdomain.com  | 99.99% public email providers allow only "a-z","0-9",".","_","-","+" before "@" part  |
+| email                         | reason                                                                               |
+|-------------------------------|--------------------------------------------------------------------------------------|
+| som_e-one@gmail.com           | Gmail don't allows "_" and "-" symbols                                               | 
+| someone@8avymt4v93mvt3t03.com | "8avymt4v93mvt3t03.com" isn't real domain and dont have DNS MX records               | 
+| s!o#m$e%o^n&e@realdomain.com  | 99.99% public email providers allow only "a-z","0-9",".","_","-","+" before "@" part |
+| someone@hotnail.com | possibility of adding your blocklist of domains and MX domains                       |
 
 # Usage
 ```shell
 npm install email-validator-dns-provider-rules --save
 ```
 ```js
-import { isValidEmail } from "email-validator-dns-provider-rules";
+import { isValidEmail, getLastInvalidText } from "email-validator-dns-provider-rules";
 
 if (!await isValidEmail('someone@gmail.com')) {
-  alert('Please correct your email');
+    alert('Please correct your email: ' + getLastInvalidText());
 }
 ```
 
+# Your version of invalid reasons text
+You can use getLastInvalidReasonId() and make dictionary with your version of text: 
+```js
+const INVALID_REASON_TEXT = {
+    INVALID_REASON_AMOUNT_OF_AT: 'no @ symbol or too many of them',
+    INVALID_REASON_USERNAME_GENERAL_RULES: 'invalid username before @ by general email rules',
+    INVALID_REASON_DOMAIN_GENERAL_RULES: 'invalid domain after @ by general domain rules',
+    INVALID_REASON_NO_DNS_MX_RECORDS: 'domain after @ has no DNS MX records',
+    INVALID_REASON_DOMAIN_IN_BLOCKLIST: 'email domain is in blocklist',
+    INVALID_REASON_USERNAME_VENDOR_RULES: 'invalid username before @ by domain vendor rules',
+}
+```
+
+# Passing your blacklist domains
+```js
+const yourBlocklistDomains = ['somedomain.com', '...'];
+isValidEmail('someone@gmail.com', yourBlocklistDomains);
+```
+
+# Passing your DOH provider
+You can choose other DNS over HTTPS provider or even create your own
+```js
+isValidEmail('someone@gmail.com', null, 'https://your-provider-site/dns-query');
+```
 
 # Testing
 ```shell
