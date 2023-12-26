@@ -23,5 +23,9 @@ let reasons = {
 for (let email in reasons) {
     test(email, () => validator.isValidEmail(email).then((result) => expect(validator.getLastInvalidReasonId()).toBe(reasons[email])));
 }
-test('passing blocklisted domain', () => validator.isValidEmail('someone@hotmail.com', ['hotmail.com']).then(result => expect(result).toBe(false)));
-test('passing DOH provider', () => validator.isValidEmail('someone@hotmail.com', null, 'https://doh.sb/dns-query').then(result => expect(result).toBe(true)));
+test('text reason', () => validator.isValidEmail('some-one@gmail.com')
+    .then(() => expect(validator.getLastInvalidText()).toBe('invalid username before @ by domain vendor rules')));
+test('passing blocklisted domain', () => validator.isValidEmail('someone@hotmail.com', ['hotmail.com'])
+    .then(result => expect(result).toBe(false)));
+test('passing DOH provider', () => validator.isValidEmail('someone@hotmail.com', null, 'https://doh.sb/dns-query')
+    .then(result => expect(result).toBe(true)));
