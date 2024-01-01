@@ -1,7 +1,7 @@
 # Email validator dns provider rules
 **Strict Email Validator** with checking DNS MX records and email providers rules (like Gmail).<br>
 
-- more strict and real validation for symbols before "@"
+- more strict and realistic validation for symbols before "@"
 - stricter specific rules for ESP like gmail, yahoo, etc
 - check if domain really exist and works
 - check if domain can receive emails (DNS MX record)
