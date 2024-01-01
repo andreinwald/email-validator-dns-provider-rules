@@ -5,6 +5,8 @@
 - stricter specific rules for ESP like gmail, yahoo, etc
 - check if domain really exist and works
 - check if domain can receive emails (DNS MX record)
+- your version of invalid reasons text
+- passing your blocklist MX domains
 - everything works in browser! (DNS query by DOH)
 
 **Invalid emails that other validators pass:**
@@ -41,7 +43,7 @@ const INVALID_REASON_TEXT = {
 }
 ```
 
-# Passing your blacklist domains
+# Passing your blocklist domains
 ```js
 const yourBlocklistDomains = ['somedomain.com', '...'];
 isValidEmail('someone@gmail.com', yourBlocklistDomains);
