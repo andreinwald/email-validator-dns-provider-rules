@@ -11,7 +11,7 @@ let reasons = {
     'some_one@gmail.com': validator.INVALID_REASON_USERNAME_VENDOR_RULES,
     'some+one@yahoo.com': validator.INVALID_REASON_USERNAME_VENDOR_RULES,
     'someone@hotnail.com': validator.INVALID_REASON_DOMAIN_IN_BLOCKLIST,
-    'someone@av7w8nyt87a34ntv87a34ntv78.com': validator.INVALID_REASON_NO_DNS_MX_RECORDS,
+    'someone@domain.invalid': validator.INVALID_REASON_NO_DNS_MX_RECORDS,
     'name/surname@hotmail.com': validator.INVALID_REASON_USERNAME_GENERAL_RULES,
     'name\\surname@hotmail.com': validator.INVALID_REASON_USERNAME_GENERAL_RULES,
     '"john.doe"@hotmail.com': validator.INVALID_REASON_USERNAME_GENERAL_RULES,
