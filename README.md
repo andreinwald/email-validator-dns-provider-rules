@@ -60,5 +60,10 @@ isValidEmail('someone@gmail.com', null, 'https://your-provider-site/dns-query');
 npm test
 ```
 
----
+### generating d.ts
+```shell
+tsc --declaration src/index.js --allowJs
+```
+
+### NPM package
 https://www.npmjs.com/package/email-validator-dns-provider-rules
