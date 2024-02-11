@@ -5,10 +5,10 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "vitest"
   },
   "devDependencies": {
-    "jest": "^29.7.0"
+    "vitest": "^1.2.2"
   },
   "repository": {
     "type": "git",

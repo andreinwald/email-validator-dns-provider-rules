@@ -1,4 +1,5 @@
 import * as validator from '../src';
+import {expect, test} from 'vitest'
 
 
 // a lot of tests with hotmail.com bc his rules same as main rule and this domain has MX record
@@ -7,6 +8,7 @@ let reasons = {
     'someone@gmail.com': false,
     'someone@yahoo.com': false,
     'user+@hotmail.com': false,
+    'userotmail.com': validator.INVALID_REASON_AMOUNT_OF_AT,
     'some-one@gmail.com': validator.INVALID_REASON_USERNAME_VENDOR_RULES,
     'some_one@gmail.com': validator.INVALID_REASON_USERNAME_VENDOR_RULES,
     'some+one@yahoo.com': validator.INVALID_REASON_USERNAME_VENDOR_RULES,

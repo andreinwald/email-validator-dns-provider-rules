@@ -37,7 +37,7 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
     lastReasonId = false;
     email = String(email).toLowerCase();
     let parts = email.split('@');
-    if (!parts || parts.length > 2) {
+    if (!parts || parts.length !== 2) {
         lastReasonId = INVALID_REASON_AMOUNT_OF_AT;
         return false;
     }
