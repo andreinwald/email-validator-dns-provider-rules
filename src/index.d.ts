@@ -1,7 +1,11 @@
-export function isValidEmail(email: any, blocklistDomains?: any, dohProvider?: any): Promise<boolean>;
+export function isValidEmail(email: string, blocklistDomains?: [] | null, dohProvider?: string | null): Promise<boolean>;
+
 export function getLastInvalidReasonId(): boolean;
-export function getLastInvalidText(): any;
-export function getMxDomains(emailDomain: any, dohProvider?: any): Promise<any>;
+
+export function getLastInvalidText(): string | boolean;
+
+export function getMxDomains(emailDomain: string, dohProvider?: string | null): Promise<any>;
+
 export const INVALID_REASON_AMOUNT_OF_AT: 1;
 export const INVALID_REASON_USERNAME_GENERAL_RULES: 2;
 export const INVALID_REASON_DOMAIN_GENERAL_RULES: 3;
