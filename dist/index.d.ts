@@ -1,0 +1,10 @@
+export declare const INVALID_REASON_AMOUNT_OF_AT = 1;
+export declare const INVALID_REASON_USERNAME_GENERAL_RULES = 2;
+export declare const INVALID_REASON_DOMAIN_GENERAL_RULES = 3;
+export declare const INVALID_REASON_NO_DNS_MX_RECORDS = 4;
+export declare const INVALID_REASON_DOMAIN_IN_BLOCKLIST = 5;
+export declare const INVALID_REASON_USERNAME_VENDOR_RULES = 6;
+export declare function isValidEmail(email: any, blocklistDomains?: any, dohProvider?: any): Promise<boolean>;
+export declare function getLastInvalidReasonId(): number | boolean;
+export declare function getLastInvalidText(): string | boolean;
+export declare function getMxDomains(emailDomain: any, dohProvider?: any): Promise<any[] | boolean>;

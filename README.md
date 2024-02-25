@@ -62,7 +62,8 @@ npm test
 
 ### generating d.ts
 ```shell
-tsc --declaration src/index.js --allowJs
+npm i -g tsc && npm link tsc
+tsc
 ```
 
 ### NPM package
