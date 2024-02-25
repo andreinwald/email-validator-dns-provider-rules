@@ -8,6 +8,7 @@
 - your version of invalid reasons text
 - passing your blocklist MX domains
 - everything works in browser! (DNS query by DOH)
+- supports TypeScript and JavaScript
 
 **Invalid emails that other validators pass:**
 
