@@ -63,7 +63,7 @@ npm test
 
 ### generating d.ts
 ```shell
-npm i -g tsc && npm link tsc
+npm i -g typescript
 tsc
 ```
 
