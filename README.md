@@ -1,6 +1,9 @@
 # Email validator dns provider rules
 **Email Validator** with checking DNS MX records and strict real-life symbols rules<br>
 
+[![NPM](https://nodei.co/npm/email-validator-dns-provider-rules.png)](https://nodei.co/npm/email-validator-dns-provider-rules/)
+
+
 - more strict and realistic validation for symbols before "@"
 - stricter specific rules for ESP like gmail, yahoo, etc
 - check if domain really exist and works
