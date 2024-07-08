@@ -7,4 +7,4 @@ export declare const INVALID_REASON_USERNAME_VENDOR_RULES = 6;
 export declare function isValidEmail(email: any, blocklistDomains?: any, dohProvider?: any): Promise<boolean>;
 export declare function getLastInvalidReasonId(): number | boolean;
 export declare function getLastInvalidText(): string | boolean;
-export declare function getMxDomains(emailDomain: any, dohProvider?: any): Promise<any[] | boolean>;
+export declare function getMxDomains(emailDomain: any, ownDohProviderHost?: any): Promise<string[] | false>;

@@ -11,6 +11,7 @@
 - your version of invalid reasons text
 - passing your blocklist MX domains
 - everything works in browser! (DNS query by DOH)
+- works in Node.js via DNS library
 - supports TypeScript and JavaScript
 
 **Invalid emails that other validators pass:**

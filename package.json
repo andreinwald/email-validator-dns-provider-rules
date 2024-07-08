@@ -1,6 +1,6 @@
 {
   "name": "email-validator-dns-provider-rules",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Strict Email Validator with checking DNS MX records and email providers rules in browser!",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@types/node": "^20.14.10",
     "vitest": "^1.2.2"
   },
   "repository": {

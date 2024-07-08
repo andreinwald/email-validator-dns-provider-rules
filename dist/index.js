@@ -50,7 +50,7 @@ async function isValidEmail(email, blocklistDomains = null, dohProvider = null) 
         return false;
     }
     let mxDomains = await getMxDomains(domain, dohProvider);
-    if (mxDomains === false || !Array.isArray(mxDomains)) {
+    if (mxDomains === false) {
         // problem with mx request - better pass next
         return true;
     }
@@ -98,32 +98,19 @@ function checkProviderRules(username, domain, mxDomain) {
     }
     return true;
 }
-async function getMxDomains(emailDomain, dohProvider = null) {
+async function getMxDomains(emailDomain, ownDohProviderHost = null) {
     if (mx_domains_cache_1.default[emailDomain]) {
-        return new Promise((resolve) => {
-            resolve([mx_domains_cache_1.default[emailDomain]]);
-        });
+        return [mx_domains_cache_1.default[emailDomain]];
     }
-    let response = await getMxRecords(emailDomain, dohProvider);
-    if (!response || !response.ok) {
-        console.log('problem with mx request ' + emailDomain);
+    let records = await getMxRecords(emailDomain, ownDohProviderHost);
+    if (records === false) {
         return false;
-    }
-    let data = await response.json();
-    if (!data || !('Status' in data)) {
-        console.log('problem with mx request ' + emailDomain, data);
-        return false;
-    }
-    if (!data['Answer'] || !data['Answer'].length) {
-        return [];
     }
     let result = [];
-    data['Answer'].map(row => {
-        let mxDomain = row.data.substring(row.data.indexOf(' ') + 1).trim().toLowerCase();
-        mxDomain = mxDomain.replace(/\.*$/, '');
-        let parts = mxDomain.split('.');
+    records.map(record => {
+        let parts = record.split('.');
         if (parts.length < 3) {
-            result.push(mxDomain);
+            result.push(record);
         }
         else {
             result.push(parts.slice(parts.length - 2).join('.'));
@@ -134,17 +121,49 @@ async function getMxDomains(emailDomain, dohProvider = null) {
     return unique;
 }
 exports.getMxDomains = getMxDomains;
-async function getMxRecords(emailDomain, dohProvider = null, retry = 3) {
-    let iteration = 0;
-    let excludeResolvers = [];
-    if (dohProvider !== null && dohProvider.length > 3) {
-        return fetch(dohProvider + `?type=MX&name=` + encodeURIComponent(emailDomain), {
-            headers: { accept: 'application/dns-json' }
+async function getMxRecords(emailDomain, ownDohProviderHost = null, retry = 3) {
+    async function processDohResponse(response) {
+        let data = await response.json();
+        if (!data || !('Status' in data)) {
+            console.error('problem with mx request ' + emailDomain, data);
+            return false;
+        }
+        if (!data['Answer'] || !data['Answer'].length) {
+            return [];
+        }
+        return data['Answer'].map(row => {
+            let mxDomain = row.data.substring(row.data.indexOf(' ') + 1).trim().toLowerCase();
+            return mxDomain.replace(/\.*$/, ''); // last dot
         });
     }
-    async function request() {
-        let notTriedDomains = DNS_OVER_HTTPS_PROVIDERS.filter(x => !excludeResolvers.includes(x));
-        let resolver = notTriedDomains[(Math.floor(Math.random() * notTriedDomains.length))];
+    // ---------- Own DOH provider
+    if (ownDohProviderHost !== null && ownDohProviderHost.length > 3) {
+        let response = await fetch(ownDohProviderHost + `?type=MX&name=` + encodeURIComponent(emailDomain), {
+            headers: { accept: 'application/dns-json' }
+        });
+        return processDohResponse(response);
+    }
+    // ---------- Node.js
+    if (typeof process !== 'undefined') {
+        let dnsPromises = require('dns').promises;
+        try {
+            let records = await dnsPromises.resolveMx(emailDomain);
+            return records.map(rec => rec.exchange);
+        }
+        catch (error) {
+            console.error('problem with mx request ' + emailDomain, error.message);
+            if (error.message.includes('ENOTFOUND')) {
+                return [];
+            }
+            return false;
+        }
+    }
+    // ---------- Default DOH providers
+    let iteration = 0;
+    let excludeResolvers = [];
+    async function iterateDefaultProviders() {
+        let notTriedProviders = DNS_OVER_HTTPS_PROVIDERS.filter(x => !excludeResolvers.includes(x));
+        let resolver = notTriedProviders[(Math.floor(Math.random() * notTriedProviders.length))];
         excludeResolvers.push(resolver);
         let response = await fetch(resolver + `?type=MX&name=` + encodeURIComponent(emailDomain), {
             headers: { accept: 'application/dns-json' }
@@ -152,12 +171,14 @@ async function getMxRecords(emailDomain, dohProvider = null, retry = 3) {
         if (!response.ok) {
             iteration++;
             if (iteration < retry) {
-                return request();
+                return iterateDefaultProviders();
             }
-            else
+            else {
+                console.error('Out of iterations for mx request ' + emailDomain);
                 return false;
+            }
         }
-        return response;
+        return processDohResponse(response);
     }
-    return await request();
+    return iterateDefaultProviders();
 }
