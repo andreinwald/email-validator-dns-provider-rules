@@ -38,14 +38,17 @@ if (!await isValidEmail('someone@gmail.com')) {
 # Your version of invalid reasons text
 You can use getLastInvalidReasonId() and make dictionary with your version of text: 
 ```js
-const INVALID_REASON_TEXT = {
-    INVALID_REASON_AMOUNT_OF_AT: 'no @ symbol or too many of them',
-    INVALID_REASON_USERNAME_GENERAL_RULES: 'invalid username before @ by general email rules',
-    INVALID_REASON_DOMAIN_GENERAL_RULES: 'invalid domain after @ by general domain rules',
-    INVALID_REASON_NO_DNS_MX_RECORDS: 'domain after @ has no DNS MX records',
-    INVALID_REASON_DOMAIN_IN_BLOCKLIST: 'email domain is in blocklist',
-    INVALID_REASON_USERNAME_VENDOR_RULES: 'invalid username before @ by domain vendor rules',
-}
+const CUSTOM_INVALID_TEXT = {
+    [INVALID_REASON_AMOUNT_OF_AT]: 'no @ symbol or too many of them',
+    [INVALID_REASON_USERNAME_GENERAL_RULES]:
+        'invalid username before @ by general email rules',
+    [INVALID_REASON_DOMAIN_GENERAL_RULES]:
+        'invalid domain after @ by general domain rules',
+    [INVALID_REASON_NO_DNS_MX_RECORDS]: 'domain after @ has no DNS MX records',
+    [INVALID_REASON_DOMAIN_IN_BLOCKLIST]: 'email domain is in blocklist',
+    [INVALID_REASON_USERNAME_VENDOR_RULES]:
+        'invalid username before @ by domain vendor rules',
+};
 ```
 
 # Passing your blocklist domains
