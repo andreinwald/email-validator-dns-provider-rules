@@ -155,10 +155,10 @@ async function getMxRecords(emailDomain: string, ownDohProviderHost = null, retr
             let records = await dnsPromises.resolveMx(emailDomain);
             return records.map(rec => rec.exchange);
         } catch (error) {
-            console.error('problem with mx request ' + emailDomain, error.message);
             if (error.message.includes('ENOTFOUND')) {
                 return [];
             }
+            console.error('problem with mx request ' + emailDomain, error.message);
             return false;
         }
     }

@@ -151,10 +151,10 @@ async function getMxRecords(emailDomain, ownDohProviderHost = null, retry = 3) {
             return records.map(rec => rec.exchange);
         }
         catch (error) {
-            console.error('problem with mx request ' + emailDomain, error.message);
             if (error.message.includes('ENOTFOUND')) {
                 return [];
             }
+            console.error('problem with mx request ' + emailDomain, error.message);
             return false;
         }
     }
