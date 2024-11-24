@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMxDomains = exports.getLastInvalidText = exports.getLastInvalidReasonId = exports.isValidEmail = exports.INVALID_REASON_USERNAME_VENDOR_RULES = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST = exports.INVALID_REASON_NO_DNS_MX_RECORDS = exports.INVALID_REASON_DOMAIN_GENERAL_RULES = exports.INVALID_REASON_USERNAME_GENERAL_RULES = exports.INVALID_REASON_AMOUNT_OF_AT = void 0;
+exports.getMxDomains = exports.getLastInvalidText = exports.getLastInvalidReasonId = exports.isValidEmail = exports.INVALID_REASON_DOMAIN_POPULAR_TYPO = exports.INVALID_REASON_USERNAME_VENDOR_RULES = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST = exports.INVALID_REASON_NO_DNS_MX_RECORDS = exports.INVALID_REASON_DOMAIN_GENERAL_RULES = exports.INVALID_REASON_USERNAME_GENERAL_RULES = exports.INVALID_REASON_AMOUNT_OF_AT = void 0;
 const mx_domains_cache_1 = require("./mx_domains_cache");
 const USERNAME_MAIN_RULE = /^[a-z0-9._\-+]{1,64}$/;
 const DOMAIN_RULE = /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/;
@@ -17,12 +17,22 @@ const DNS_OVER_HTTPS_PROVIDERS = [
 const BLOCKLIST_DOMAINS_EXAMPLE = [
     'hotnail.com', // too similar to hotmail
 ];
+const POPULAR_DOMAIN_TYPOS = [
+    'gamil.com',
+    'gmil.com',
+    'gmail.co',
+    'gnail.com',
+    'gmeil.com',
+    'gmai.com',
+    'gmal.com',
+];
 exports.INVALID_REASON_AMOUNT_OF_AT = 1;
 exports.INVALID_REASON_USERNAME_GENERAL_RULES = 2;
 exports.INVALID_REASON_DOMAIN_GENERAL_RULES = 3;
 exports.INVALID_REASON_NO_DNS_MX_RECORDS = 4;
 exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST = 5;
 exports.INVALID_REASON_USERNAME_VENDOR_RULES = 6;
+exports.INVALID_REASON_DOMAIN_POPULAR_TYPO = 7;
 const INVALID_REASON_TEXT = {
     [exports.INVALID_REASON_AMOUNT_OF_AT]: 'no @ symbol or too many of them',
     [exports.INVALID_REASON_USERNAME_GENERAL_RULES]: 'invalid username before @ by general email rules',
@@ -30,11 +40,12 @@ const INVALID_REASON_TEXT = {
     [exports.INVALID_REASON_NO_DNS_MX_RECORDS]: 'domain after @ has no DNS MX records',
     [exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST]: 'email domain is in blocklist',
     [exports.INVALID_REASON_USERNAME_VENDOR_RULES]: 'invalid username before @ by domain vendor rules',
+    [exports.INVALID_REASON_DOMAIN_POPULAR_TYPO]: 'typo in domain',
 };
 let lastReasonId;
-async function isValidEmail(email, blocklistDomains = null, dohProvider = null) {
+async function isValidEmail(email, blocklistDomains, dohProviderUrl) {
     lastReasonId = false;
-    email = String(email).toLowerCase();
+    email = String(email).toLowerCase().trim();
     let parts = email.split('@');
     if (!parts || parts.length !== 2) {
         lastReasonId = exports.INVALID_REASON_AMOUNT_OF_AT;
@@ -45,11 +56,15 @@ async function isValidEmail(email, blocklistDomains = null, dohProvider = null) 
         lastReasonId = exports.INVALID_REASON_USERNAME_GENERAL_RULES;
         return false;
     }
-    if (DOMAIN_RULE.test(domain) === false) {
+    if (!checkDomain(domain)) {
         lastReasonId = exports.INVALID_REASON_DOMAIN_GENERAL_RULES;
         return false;
     }
-    let mxDomains = await getMxDomains(domain, dohProvider);
+    if (!checkPopularTypos(domain)) {
+        lastReasonId = exports.INVALID_REASON_DOMAIN_POPULAR_TYPO;
+        return false;
+    }
+    let mxDomains = await getMxDomains(domain, dohProviderUrl);
     if (mxDomains === false) {
         // problem with mx request - better pass next
         return true;
@@ -63,7 +78,7 @@ async function isValidEmail(email, blocklistDomains = null, dohProvider = null) 
             lastReasonId = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
-        if (blocklistDomains !== null && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
+        if (blocklistDomains && blocklistDomains.length && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
             lastReasonId = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
@@ -86,7 +101,27 @@ function getLastInvalidText() {
     return INVALID_REASON_TEXT[lastReasonId];
 }
 exports.getLastInvalidText = getLastInvalidText;
+function checkDomain(domain) {
+    if (DOMAIN_RULE.test(domain) === false) {
+        return false;
+    }
+    if (domain.startsWith('.')) {
+        return false;
+    }
+    if (domain.endsWith('.')) {
+        return false;
+    }
+    return true;
+}
+function checkPopularTypos(domain) {
+    return !POPULAR_DOMAIN_TYPOS.includes(domain);
+}
 function checkProviderRules(username, domain, mxDomain) {
+    if (domain === 'gmail.com') {
+        if (username.startsWith('.') || username.endsWith('.') || username.includes('..')) {
+            return false;
+        }
+    }
     if (mxDomain === 'google.com' && domain !== 'gmail.com') {
         mxDomain = 'google_workplace';
     }

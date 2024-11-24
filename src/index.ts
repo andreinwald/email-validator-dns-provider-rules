@@ -16,12 +16,23 @@ const DNS_OVER_HTTPS_PROVIDERS = [
 const BLOCKLIST_DOMAINS_EXAMPLE = [
     'hotnail.com', // too similar to hotmail
 ]
+const POPULAR_DOMAIN_TYPOS = [
+    'gamil.com',
+    'gmil.com',
+    'gmail.co',
+    'gnail.com',
+    'gmeil.com',
+    'gmai.com',
+    'gmal.com',
+];
+
 export const INVALID_REASON_AMOUNT_OF_AT = 1;
 export const INVALID_REASON_USERNAME_GENERAL_RULES = 2;
 export const INVALID_REASON_DOMAIN_GENERAL_RULES = 3;
 export const INVALID_REASON_NO_DNS_MX_RECORDS = 4;
 export const INVALID_REASON_DOMAIN_IN_BLOCKLIST = 5;
 export const INVALID_REASON_USERNAME_VENDOR_RULES = 6;
+export const INVALID_REASON_DOMAIN_POPULAR_TYPO = 7;
 
 const INVALID_REASON_TEXT = {
     [INVALID_REASON_AMOUNT_OF_AT]: 'no @ symbol or too many of them',
@@ -30,13 +41,14 @@ const INVALID_REASON_TEXT = {
     [INVALID_REASON_NO_DNS_MX_RECORDS]: 'domain after @ has no DNS MX records',
     [INVALID_REASON_DOMAIN_IN_BLOCKLIST]: 'email domain is in blocklist',
     [INVALID_REASON_USERNAME_VENDOR_RULES]: 'invalid username before @ by domain vendor rules',
+    [INVALID_REASON_DOMAIN_POPULAR_TYPO]: 'typo in domain',
 }
-let lastReasonId: boolean | number;
+let lastReasonId: number | false;
 
 
-export async function isValidEmail(email, blocklistDomains = null, dohProvider = null) {
+export async function isValidEmail(email: string, blocklistDomains?: string[], dohProviderUrl?: string) {
     lastReasonId = false;
-    email = String(email).toLowerCase();
+    email = String(email).toLowerCase().trim();
     let parts = email.split('@');
     if (!parts || parts.length !== 2) {
         lastReasonId = INVALID_REASON_AMOUNT_OF_AT;
@@ -47,11 +59,15 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
         lastReasonId = INVALID_REASON_USERNAME_GENERAL_RULES;
         return false;
     }
-    if (DOMAIN_RULE.test(domain) === false) {
+    if (!checkDomain(domain)) {
         lastReasonId = INVALID_REASON_DOMAIN_GENERAL_RULES;
         return false;
     }
-    let mxDomains = await getMxDomains(domain, dohProvider);
+    if (!checkPopularTypos(domain)) {
+        lastReasonId = INVALID_REASON_DOMAIN_POPULAR_TYPO;
+        return false;
+    }
+    let mxDomains = await getMxDomains(domain, dohProviderUrl);
     if (mxDomains === false) {
         // problem with mx request - better pass next
         return true;
@@ -65,7 +81,7 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
             lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
-        if (blocklistDomains !== null && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
+        if (blocklistDomains && blocklistDomains.length && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
             lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
             return false;
         }
@@ -77,18 +93,40 @@ export async function isValidEmail(email, blocklistDomains = null, dohProvider =
     return true;
 }
 
-export function getLastInvalidReasonId(): number | boolean {
+export function getLastInvalidReasonId(): number | false {
     return lastReasonId;
 }
 
-export function getLastInvalidText(): string | boolean {
+export function getLastInvalidText(): string | false {
     if (lastReasonId === false || typeof lastReasonId !== "number") {
         return false;
     }
     return INVALID_REASON_TEXT[lastReasonId];
 }
 
-function checkProviderRules(username, domain, mxDomain) {
+function checkDomain(domain: string) {
+    if (DOMAIN_RULE.test(domain) === false) {
+        return false;
+    }
+    if (domain.startsWith('.')) {
+        return false;
+    }
+    if (domain.endsWith('.')) {
+        return false;
+    }
+    return true;
+}
+
+function checkPopularTypos(domain: string) {
+    return !POPULAR_DOMAIN_TYPOS.includes(domain);
+}
+
+function checkProviderRules(username: string, domain: string, mxDomain: string) {
+    if (domain === 'gmail.com') {
+        if (username.startsWith('.') || username.endsWith('.') || username.includes('..')) {
+            return false;
+        }
+    }
     if (mxDomain === 'google.com' && domain !== 'gmail.com') {
         mxDomain = 'google_workplace';
     }
@@ -101,7 +139,7 @@ function checkProviderRules(username, domain, mxDomain) {
     return true;
 }
 
-export async function getMxDomains(emailDomain, ownDohProviderHost = null): Promise<string[] | false> {
+export async function getMxDomains(emailDomain: string, ownDohProviderHost = null): Promise<string[] | false> {
     if (mx_domains_cache[emailDomain]) {
         return [mx_domains_cache[emailDomain]];
     }
