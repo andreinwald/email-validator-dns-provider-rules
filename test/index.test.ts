@@ -44,6 +44,7 @@ let reasons = {
     '1234567890123456789012345678901234567890123456789012345678901234+x@hotmail.com': validator.INVALID_REASON_USERNAME_GENERAL_RULES,
     'someone@3ffff.f': validator.INVALID_REASON_DOMAIN_GENERAL_RULES,
     'someone@gamil.com': validator.INVALID_REASON_DOMAIN_POPULAR_TYPO,
+    'someone@gmail.fr': validator.INVALID_REASON_NO_DNS_MX_RECORDS,
 };
 
 for (let email in reasons) {

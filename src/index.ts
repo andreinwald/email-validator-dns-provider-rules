@@ -149,6 +149,10 @@ export async function getMxDomains(emailDomain: string, ownDohProviderHost = nul
     }
     let result = [];
     records.map(record => {
+        record = record.toLowerCase().trim();
+        if (!record || record === '') {
+            return;
+        }
         let parts = record.split('.');
         if (parts.length < 3) {
             result.push(record);
