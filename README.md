@@ -1,4 +1,4 @@
-# Email validator with DNS check and popular provider's rules
+# Email validator with DNS check and provider's rules
 Examples, that other validators pass:
 
 | invalid email                         | reason                                                                               |
