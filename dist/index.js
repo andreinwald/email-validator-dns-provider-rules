@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getMxDomains = exports.getLastInvalidText = exports.getLastInvalidReasonId = exports.isValidEmail = exports.INVALID_REASON_DOMAIN_POPULAR_TYPO = exports.INVALID_REASON_USERNAME_VENDOR_RULES = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST = exports.INVALID_REASON_NO_DNS_MX_RECORDS = exports.INVALID_REASON_DOMAIN_GENERAL_RULES = exports.INVALID_REASON_USERNAME_GENERAL_RULES = exports.INVALID_REASON_AMOUNT_OF_AT = void 0;
+exports.INVALID_REASON_DOMAIN_POPULAR_TYPO = exports.INVALID_REASON_USERNAME_VENDOR_RULES = exports.INVALID_REASON_DOMAIN_IN_BLOCKLIST = exports.INVALID_REASON_NO_DNS_MX_RECORDS = exports.INVALID_REASON_DOMAIN_GENERAL_RULES = exports.INVALID_REASON_USERNAME_GENERAL_RULES = exports.INVALID_REASON_AMOUNT_OF_AT = void 0;
+exports.isValidEmail = isValidEmail;
+exports.getLastInvalidReasonId = getLastInvalidReasonId;
+exports.getLastInvalidText = getLastInvalidText;
+exports.getMxDomains = getMxDomains;
 const mx_domains_cache_1 = require("./mx_domains_cache");
 const USERNAME_MAIN_RULE = /^[a-z0-9._\-+]{1,64}$/;
 const DOMAIN_RULE = /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/;
@@ -89,18 +93,15 @@ async function isValidEmail(email, blocklistDomains, dohProviderUrl) {
     }
     return true;
 }
-exports.isValidEmail = isValidEmail;
 function getLastInvalidReasonId() {
     return lastReasonId;
 }
-exports.getLastInvalidReasonId = getLastInvalidReasonId;
 function getLastInvalidText() {
     if (lastReasonId === false || typeof lastReasonId !== "number") {
         return false;
     }
     return INVALID_REASON_TEXT[lastReasonId];
 }
-exports.getLastInvalidText = getLastInvalidText;
 function checkDomain(domain) {
     if (DOMAIN_RULE.test(domain) === false) {
         return false;
@@ -159,7 +160,6 @@ async function getMxDomains(emailDomain, ownDohProviderHost = null) {
     let unique = result.filter((value, index, array) => array.indexOf(value) === index);
     return unique;
 }
-exports.getMxDomains = getMxDomains;
 async function getMxRecords(emailDomain, ownDohProviderHost = null, retry = 3) {
     async function processDohResponse(response) {
         let data = await response.json();

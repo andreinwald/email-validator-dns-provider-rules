@@ -477,6 +477,17 @@ declare const _default: {
     'zoominternet.net': string;
     'metto.com.ua': string;
     'northsixty.com': string;
+    'starmail.net': string;
+    'proton.me': string;
+    'passmail.net': string;
+    'duck.com': string;
+    'rowdydow.com': string;
+    'ramzy.app': string;
+    'chartreuse.mu': string;
+    'zetto.site': string;
+    'gen.tech': string;
+    'tatadidi.com': string;
+    'windsteam.online': string;
     'hot.com': string;
     'gom.com': string;
     'yahoo.cl': string;
