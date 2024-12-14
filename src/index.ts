@@ -1,5 +1,4 @@
 import mx_domains_cache from "./mx_domains_cache"
-import {promises as dnsPromises} from "dns";
 
 const USERNAME_MAIN_RULE = /^[a-z0-9._\-+]{1,64}$/
 const DOMAIN_RULE = /(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/
