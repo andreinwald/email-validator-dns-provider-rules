@@ -1,32 +1,29 @@
-# Email validator dns provider rules
-**Email Validator** with checking DNS MX records and strict real-life symbols rules<br>
+# Email validator with DNS check and popular provider's rules
+Examples, that other validators pass:
 
-[![NPM](https://nodei.co/npm/email-validator-dns-provider-rules.png)](https://nodei.co/npm/email-validator-dns-provider-rules/)
-
-
-- more strict and realistic validation for symbols before "@"
-- stricter specific rules for ESP like gmail, yahoo, etc
-- check if domain really exist and works
-- check if domain can receive emails (DNS MX record)
-- your version of invalid reasons text
-- passing your blocklist MX domains
-- everything works in browser! (DNS query by DOH)
-- works in Node.js via DNS library
-- supports TypeScript and JavaScript
-
-**Invalid emails that other validators pass:**
-
-| email                         | reason                                                                               |
+| invalid email                         | reason                                                                               |
 |-------------------------------|--------------------------------------------------------------------------------------|
 | som_e-one@gmail.com           | Gmail don't allows "_" and "-" symbols                                               | 
 | someone@8avymt4v93mvt3t03.com | "8avymt4v93mvt3t03.com" isn't real domain and dont have DNS MX records               | 
 | s!o#m$e%o^n&e@realdomain.com  | 99.99% public email providers allow only "a-z","0-9",".","_","-","+" before "@" part |
 | someone@hotnail.com | possibility of adding your blocklist of domains and MX domains                       |
 
+Works in **Browser** and Node. TypeScript and JavaScript.
+
 # Usage
+Please install [NPM package](https://www.npmjs.com/package/email-validator-dns-provider-rules) (works in browser also)
 ```shell
 npm install email-validator-dns-provider-rules --save
 ```
+Validation:
+```js
+import { isValidEmail } from "email-validator-dns-provider-rules";
+
+if (!await isValidEmail('someone@gmail.com')) {
+    alert('Your email is invalid');
+}
+```
+Showing details:
 ```js
 import { isValidEmail, getLastInvalidText } from "email-validator-dns-provider-rules";
 
@@ -68,11 +65,8 @@ isValidEmail('someone@gmail.com', null, 'https://your-provider-site/dns-query');
 npm test
 ```
 
-### generating d.ts
+### Generating d.ts
 ```shell
 npm i -g typescript
 tsc
 ```
-
-### NPM package
-https://www.npmjs.com/package/email-validator-dns-provider-rules
