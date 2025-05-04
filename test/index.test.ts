@@ -1,5 +1,6 @@
 import * as validator from '../src';
 import {expect, test} from 'vitest'
+import {DNS_OVER_HTTPS_PROVIDERS} from "../src";
 
 
 let validEmails = [
@@ -56,5 +57,10 @@ test('text reason', () => validator.isValidEmail('some-one@gmail.com')
     .then(() => expect(validator.getLastInvalidText()).toBe('invalid username before @ by domain vendor rules')));
 test('passing blocklisted domain', () => validator.isValidEmail('someone@hotmail.com', ['hotmail.com'])
     .then(result => expect(result).toBe(false)));
-test('passing DOH provider', () => validator.isValidEmail('someone@domain.invalid', null, 'https://doh.sb/dns-query')
-    .then(result => expect(result).toBe(false)));
+
+for (let dohProvider of DNS_OVER_HTTPS_PROVIDERS) {
+    test('passing DOH provider ' + dohProvider, () => validator.isValidEmail('someone@domain.invalid', null, dohProvider)
+        .then(result => expect(result).toBe(false)));
+}
+
+
