@@ -42,65 +42,71 @@ const INVALID_REASON_TEXT = {
     [INVALID_REASON_USERNAME_VENDOR_RULES]: 'invalid username before @ by domain vendor rules',
     [INVALID_REASON_DOMAIN_POPULAR_TYPO]: 'typo in domain',
 }
-let lastReasonId: number | false;
 
+type ValidatorOptions = {
+    blocklistDomains?: string[],
+    dohProviderUrl?: string,
+    dohRetryAmount?: number,
+    skipCache?: boolean,
+    mxResolver?: (domain: string) => Promise<string[] | false>,
+}
 
-export async function isValidEmail(email: string, blocklistDomains?: string[], dohProviderUrl?: string) {
-    lastReasonId = false;
+const OptionsDefaults: ValidatorOptions = {
+    blocklistDomains: BLOCKLIST_DOMAINS_EXAMPLE,
+    dohRetryAmount: 3,
+    skipCache: false,
+}
+
+type ValidationResult = {
+    valid: boolean,
+    reasonId?: number,
+    reasonText?: string,
+}
+
+function withReasonText(result: ValidationResult): ValidationResult {
+    result.reasonText = INVALID_REASON_TEXT[result.reasonId];
+    return result;
+}
+
+export async function validateEmail(email: string, options: ValidatorOptions = OptionsDefaults): Promise<ValidationResult> {
+    if (typeof options !== 'object' || options === null) {
+        throw new Error('Options parameter must be an object');
+    }
     email = String(email).toLowerCase().trim();
     let parts = email.split('@');
     if (!parts || parts.length !== 2) {
-        lastReasonId = INVALID_REASON_AMOUNT_OF_AT;
-        return false;
+        return withReasonText({valid: false, reasonId: INVALID_REASON_AMOUNT_OF_AT});
     }
     let [username, domain] = parts;
     if (USERNAME_MAIN_RULE.test(username) === false) {
-        lastReasonId = INVALID_REASON_USERNAME_GENERAL_RULES;
-        return false;
+        return withReasonText({valid: false, reasonId: INVALID_REASON_USERNAME_GENERAL_RULES});
     }
     if (!checkDomain(domain)) {
-        lastReasonId = INVALID_REASON_DOMAIN_GENERAL_RULES;
-        return false;
+        return withReasonText({valid: false, reasonId: INVALID_REASON_DOMAIN_GENERAL_RULES});
     }
     if (!checkPopularTypos(domain)) {
-        lastReasonId = INVALID_REASON_DOMAIN_POPULAR_TYPO;
-        return false;
+        return withReasonText({valid: false, reasonId: INVALID_REASON_DOMAIN_POPULAR_TYPO});
     }
-    let mxDomains = await getMxDomains(domain, dohProviderUrl);
+    let mxDomains = await getMxDomains(domain, options);
     if (mxDomains === false) {
-        // problem with mx request - better pass next
-        return true;
+        // problem with getting MX records - can't be sure
+        return {valid: true};
     }
     if (!mxDomains.length) {
-        lastReasonId = INVALID_REASON_NO_DNS_MX_RECORDS;
-        return false;
+        return withReasonText({valid: false, reasonId: INVALID_REASON_NO_DNS_MX_RECORDS});
     }
     for (let mxDomain of mxDomains) {
-        if (BLOCKLIST_DOMAINS_EXAMPLE.includes(mxDomain) || BLOCKLIST_DOMAINS_EXAMPLE.includes(domain)) {
-            lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
-            return false;
-        }
-        if (blocklistDomains && blocklistDomains.length && (blocklistDomains.includes(mxDomain) || blocklistDomains.includes(domain))) {
-            lastReasonId = INVALID_REASON_DOMAIN_IN_BLOCKLIST;
-            return false;
+        if (options.blocklistDomains && options.blocklistDomains.length
+            && (options.blocklistDomains.includes(mxDomain) || options.blocklistDomains.includes(domain))) {
+            return withReasonText({valid: false, reasonId: INVALID_REASON_DOMAIN_IN_BLOCKLIST});
         }
         if (!checkProviderRules(username, domain, mxDomain)) {
-            lastReasonId = INVALID_REASON_USERNAME_VENDOR_RULES;
-            return false;
+            return withReasonText({valid: false, reasonId: INVALID_REASON_USERNAME_VENDOR_RULES});
         }
     }
-    return true;
-}
-
-export function getLastInvalidReasonId(): number | false {
-    return lastReasonId;
-}
-
-export function getLastInvalidText(): string | false {
-    if (lastReasonId === false || typeof lastReasonId !== "number") {
-        return false;
-    }
-    return INVALID_REASON_TEXT[lastReasonId];
+    return {
+        valid: true,
+    };
 }
 
 function checkDomain(domain: string) {
@@ -138,11 +144,16 @@ function checkProviderRules(username: string, domain: string, mxDomain: string) 
     return true;
 }
 
-export async function getMxDomains(emailDomain: string, ownDohProviderHost = null): Promise<string[] | false> {
-    if (mx_domains_cache[emailDomain]) {
+async function getMxDomains(emailDomain: string, options: ValidatorOptions): Promise<string[] | false> {
+    if (!options.skipCache && mx_domains_cache[emailDomain]) {
         return [mx_domains_cache[emailDomain]];
     }
-    let records = await getMxRecords(emailDomain, ownDohProviderHost);
+    let records: string[] | false;
+    if (options.mxResolver) {
+        records = await options.mxResolver(emailDomain);
+    } else {
+        records = await getMxRecords(emailDomain, options);
+    }
     if (records === false) {
         return false;
     }
@@ -164,7 +175,7 @@ export async function getMxDomains(emailDomain: string, ownDohProviderHost = nul
     return unique;
 }
 
-async function getMxRecords(emailDomain: string, ownDohProviderHost = null, retry = 3): Promise<string[] | false> {
+async function getMxRecords(emailDomain: string, options: ValidatorOptions): Promise<string[] | false> {
     async function processDohResponse(response: Response) {
         let data = await response.json();
         if (!data || !('Status' in data)) {
@@ -180,29 +191,12 @@ async function getMxRecords(emailDomain: string, ownDohProviderHost = null, retr
         });
     }
 
-
     // ---------- Own DOH provider
-    if (ownDohProviderHost !== null && ownDohProviderHost.length > 3) {
-        let response = await fetch(ownDohProviderHost + `?type=MX&name=` + encodeURIComponent(emailDomain), {
+    if (options.dohProviderUrl && options.dohProviderUrl.length > 3) {
+        let response = await fetch(options.dohProviderUrl + `?type=MX&name=` + encodeURIComponent(emailDomain), {
             headers: {accept: 'application/dns-json'}
         });
         return processDohResponse(response);
-    }
-
-    // ---------- Node.js
-    if (typeof process !== 'undefined' && process.versions != null && process.versions.node != null) {
-        // eval to fix a Webpack case
-        let dnsPromises = eval('require')('dns').promises;
-        try {
-            let records = await dnsPromises.resolveMx(emailDomain);
-            return records.map(rec => rec.exchange);
-        } catch (error) {
-            if (error.message.includes('ENOTFOUND')) {
-                return [];
-            }
-            console.error('problem with mx request ' + emailDomain, error.message);
-            return false;
-        }
     }
 
     // ---------- Default DOH providers
@@ -218,7 +212,7 @@ async function getMxRecords(emailDomain: string, ownDohProviderHost = null, retr
         });
         if (!response.ok) {
             iteration++;
-            if (iteration < retry) {
+            if (iteration < options.dohRetryAmount) {
                 return iterateDefaultProviders();
             } else {
                 console.error('Out of iterations for mx request ' + emailDomain);

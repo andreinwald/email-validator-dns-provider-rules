@@ -1,7 +1,7 @@
 import * as validator from '../src';
 import {expect, test} from 'vitest'
 import {DNS_OVER_HTTPS_PROVIDERS} from "../src";
-
+import {resolveMx} from 'dns/promises';
 
 let validEmails = [
     // hotmail.com username rules same as default
@@ -18,8 +18,8 @@ let validEmails = [
     'some.one@gmail.com',
 ];
 for (let email of validEmails) {
-    test(email, () => validator.isValidEmail(email).then((result) => {
-            expect(result).toBeTruthy();
+    test(email, () => validator.validateEmail(email).then((result) => {
+            expect(result.valid).toBeTruthy();
         })
     );
 }
@@ -49,18 +49,42 @@ let reasons = {
 };
 
 for (let email in reasons) {
-    test(email, () => validator.isValidEmail(email).then((result) => {
-        expect(validator.getLastInvalidReasonId()).toBe(reasons[email])
-    }));
+    test(email, async () => {
+        const result = await validator.validateEmail(email);
+        expect(result.valid).toBeFalsy();
+        expect(result.reasonId).toBe(reasons[email]);
+    })
 }
-test('text reason', () => validator.isValidEmail('some-one@gmail.com')
-    .then(() => expect(validator.getLastInvalidText()).toBe('invalid username before @ by domain vendor rules')));
-test('passing blocklisted domain', () => validator.isValidEmail('someone@hotmail.com', ['hotmail.com'])
-    .then(result => expect(result).toBe(false)));
+
+test('text reason', () => validator.validateEmail('some-one@gmail.com')
+    .then(result => expect(result.reasonText).toBe('invalid username before @ by domain vendor rules')));
+test('passing blocklisted domain', () => validator.validateEmail('someone@hotmail.com', {blocklistDomains: ['hotmail.com']})
+    .then(result => expect(result.valid).toBe(false)));
 
 for (let dohProvider of DNS_OVER_HTTPS_PROVIDERS) {
-    test('passing DOH provider ' + dohProvider, () => validator.isValidEmail('someone@domain.invalid', null, dohProvider)
-        .then(result => expect(result).toBe(false)));
+    test('passing DOH provider ' + dohProvider, () => validator.validateEmail('someone@domain.invalid', {dohProviderUrl: dohProvider})
+        .then(result => expect(result.valid).toBe(false)));
 }
 
+async function nodeResolver(emailDomain: string): Promise<string[] | false> {
+    try {
+        let records = await resolveMx(emailDomain);
+        return records.map(rec => rec.exchange);
+    } catch (error) {
+        if (error.message.includes('ENOTFOUND')) {
+            return []; // empty records treated as invalid
+        }
+        return false;
+    }
+}
+
+test('Node MX resolver', async () => {
+    const resultInvalid = await validator.validateEmail('someone@domain.invalid', {mxResolver: nodeResolver});
+    expect(resultInvalid.valid).toBeFalsy();
+    const resultValid = await validator.validateEmail('someone@gmail.com', {
+        mxResolver: nodeResolver,
+        skipCache: true,
+    });
+    expect(resultValid.valid).toBeTruthy();
+});
 

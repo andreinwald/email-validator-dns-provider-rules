@@ -6,7 +6,17 @@ export declare const INVALID_REASON_NO_DNS_MX_RECORDS = 4;
 export declare const INVALID_REASON_DOMAIN_IN_BLOCKLIST = 5;
 export declare const INVALID_REASON_USERNAME_VENDOR_RULES = 6;
 export declare const INVALID_REASON_DOMAIN_POPULAR_TYPO = 7;
-export declare function isValidEmail(email: string, blocklistDomains?: string[], dohProviderUrl?: string): Promise<boolean>;
-export declare function getLastInvalidReasonId(): number | false;
-export declare function getLastInvalidText(): string | false;
-export declare function getMxDomains(emailDomain: string, ownDohProviderHost?: any): Promise<string[] | false>;
+type ValidatorOptions = {
+    blocklistDomains?: string[];
+    dohProviderUrl?: string;
+    dohRetryAmount?: number;
+    skipCache?: boolean;
+    mxResolver?: (domain: string) => Promise<string[] | false>;
+};
+type ValidationResult = {
+    valid: boolean;
+    reasonId?: number;
+    reasonText?: string;
+};
+export declare function validateEmail(email: string, options?: ValidatorOptions): Promise<ValidationResult>;
+export {};
