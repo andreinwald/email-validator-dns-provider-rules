@@ -88,5 +88,5 @@ async function nodeResolver(emailDomain: string): Promise<string[] | false> {
     }
 }
 
-isValidEmail('someone@gmail.com', {mxResolver: nodeResolver});
+validateEmail('someone@gmail.com', {mxResolver: nodeResolver});
 ```
