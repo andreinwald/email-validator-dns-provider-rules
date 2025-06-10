@@ -1,92 +1,165 @@
-# Email validator with DNS check and provider's rules
+# Email Validator with DNS Check and Provider Rules
 
-Examples, that other validators pass:
+A robust email validation library that goes beyond basic regex validation by checking:
 
-| invalid email                 | reason                                                                               |
-|-------------------------------|--------------------------------------------------------------------------------------|
-| som_e-one@gmail.com           | Gmail don't allows "_" and "-" symbols                                               | 
-| someone@8avymt4v93mvt3t03.com | "8avymt4v93mvt3t03.com" isn't real domain and dont have DNS MX records               | 
-| s!o#m$e%o^n&e@realdomain.com  | 99.99% public email providers allow only "a-z","0-9",".","_","-","+" before "@" part |
-| someone@hotnail.com           | possibility of adding your blocklist of domains and MX domains                       |
+1. DNS MX records to verify domain existence
+2. Provider-specific rules for usernames (e.g., Gmail, Yahoo)
+3. Common domain typos (e.g., "gmial.com" instead of "gmail.com")
+4. Custom domain blocklists
 
-Works in **Browser** and Node. TypeScript and JavaScript.
+## Why Use This Library?
 
-# Usage
+Most email validators only check basic syntax, allowing many invalid emails to pass. This library catches emails that
+other validators miss:
 
-Please install [NPM package](https://www.npmjs.com/package/email-validator-dns-provider-rules)
+| Invalid Email                 | Reason                                                                        |
+|-------------------------------|-------------------------------------------------------------------------------|
+| som_e-one@gmail.com           | Gmail doesn't allow "_" and "-" symbols                                       | 
+| someone@8avymt4v93mvt3t03.com | "8avymt4v93mvt3t03.com" isn't a real domain and doesn't have DNS MX records   | 
+| s!o#m$e%o^n&e@realdomain.com  | Most public email providers only allow "a-z","0-9",".","_","-","+" before "@" |
+| someone@hotnail.com           | Common typo that can be blocked with the domain blocklist feature             |
+
+## Features
+
+- Works in both **Browser** and **Node.js** environments
+- Written in TypeScript with full type definitions
+- Zero dependencies
+- Customizable validation rules
+- DNS-over-HTTPS (DoH) support for browser environments
+- Custom MX resolver support for Node.js
+- Domain blocklist support
+- Detailed validation error reasons
+
+## Installation
 
 ```shell
+# NPM
 npm install email-validator-dns-provider-rules
+
+# Yarn
+yarn add email-validator-dns-provider-rules
+
+# pnpm
+pnpm add email-validator-dns-provider-rules
 ```
 
-Validation:
+## Basic Usage
 
 ```js
 import {validateEmail} from "email-validator-dns-provider-rules";
 
+// Basic validation
 const result = await validateEmail('someone@gmail.com');
 if (!result.valid) {
-    alert(`Your email is invalid: ${result.reasonText}`);
+    console.log(`Email is invalid: ${result.reasonText}`);
 }
 ```
 
-# Your version of invalid reasons text
+## API Reference
 
-You can map result.reasonId with your version of text:
+### validateEmail(email, options)
+
+Validates an email address using DNS checks and provider-specific rules.
+
+**Parameters:**
+
+- `email` (string): The email address to validate
+- `options` (object, optional): Configuration options
+
+**Returns:**
+
+- Promise<ValidationResult>: Object with validation results
+
+**ValidationResult Object:**
+
+- `valid` (boolean): Whether the email is valid
+- `reasonId` (number, optional): ID of the validation failure reason
+- `reasonText` (string, optional): Human-readable description of the validation failure
+
+### Options
+
+```typescript
+interface ValidatorOptions {
+    blocklistDomains?: string[];      // Domains to block
+    dohProviderUrl?: string;          // Custom DNS-over-HTTPS provider URL
+    dohRetryAmount?: number;          // Number of retries for DNS queries
+    skipCache?: boolean;              // Skip the internal MX domain cache
+    mxResolver?: (domain: string) => Promise<string[] | false>; // Custom MX resolver
+}
+```
+
+## Customizing Error Messages
+
+You can provide your own error messages by mapping the reason IDs:
 
 ```js
 const customReasons = {
-    [INVALID_REASON_AMOUNT_OF_AT]: 'no @ symbol or too many of them',
-    [INVALID_REASON_USERNAME_GENERAL_RULES]:
-        'invalid username before @ by general email rules',
-    [INVALID_REASON_DOMAIN_GENERAL_RULES]:
-        'invalid domain after @ by general domain rules',
-    [INVALID_REASON_NO_DNS_MX_RECORDS]: 'domain after @ has no DNS MX records',
-    [INVALID_REASON_DOMAIN_IN_BLOCKLIST]: 'email domain is in blocklist',
-    [INVALID_REASON_USERNAME_VENDOR_RULES]:
-        'invalid username before @ by domain vendor rules',
+    [INVALID_REASON_AMOUNT_OF_AT]: 'Email must contain exactly one @ symbol',
+    [INVALID_REASON_USERNAME_GENERAL_RULES]: 'Username contains invalid characters',
+    [INVALID_REASON_DOMAIN_GENERAL_RULES]: 'Domain name is invalid',
+    [INVALID_REASON_NO_DNS_MX_RECORDS]: 'Domain does not have mail server records',
+    [INVALID_REASON_DOMAIN_IN_BLOCKLIST]: 'This email domain is not allowed',
+    [INVALID_REASON_USERNAME_VENDOR_RULES]: 'Username does not meet provider requirements',
+    [INVALID_REASON_DOMAIN_POPULAR_TYPO]: 'Domain appears to be a typo (did you mean gmail.com?)',
 };
 
 const result = await validateEmail('someone@gmail.com');
 if (!result.valid) {
-    alert(`Your email is invalid: ${customReasons[result.reasonId]}`);
+    console.log(`Email is invalid: ${customReasons[result.reasonId]}`);
 }
 ```
 
-# Passing your blocklist domains
+## Using Domain Blocklists
+
+You can block specific domains:
 
 ```js
-const yourBlocklistDomains = ['somedomain.com', '...'];
-validateEmail('someone@gmail.com', {blocklistDomains: yourBlocklistDomains});
+const blockedDomains = [
+    'disposable-email.com',
+    'temporary-mail.org',
+    'hotnail.com'  // Common typo of hotmail.com
+];
+
+const result = await validateEmail('user@disposable-email.com', {
+    blocklistDomains: blockedDomains
+});
+// result.valid will be false
 ```
 
-# Passing your DOH provider
+## Custom DNS-over-HTTPS Provider
 
-You can choose other DNS over HTTPS provider or even create your own
+You can specify a custom DNS-over-HTTPS provider:
 
 ```js
-validateEmail('someone@gmail.com', {dohProviderUrl: 'https://your-provider-site/dns-query'});
+const result = await validateEmail('someone@gmail.com', {
+    dohProviderUrl: 'https://your-custom-doh-provider.com/dns-query'
+});
 ```
 
-# Using with Node.js
+## Node.js Integration
 
-You also can use this library for double checking on **backend side**.<br>
-In this case you can specify own mxResolver function that uses Node package DNS:
+For Node.js environments, you can use the native DNS module:
 
 ```typescript
 import {resolveMx} from 'dns/promises';
 
 async function nodeResolver(emailDomain: string): Promise<string[] | false> {
     try {
-        let records = await resolveMx(emailDomain);
+        const records = await resolveMx(emailDomain);
         return records.map(rec => rec.exchange);
     } catch (error) {
         if (error.message.includes('ENOTFOUND')) {
-            return []; // empty records treated as invalid
+            return []; // Empty records treated as invalid
         }
-        return false;
+        return false; // Other errors treated as "can't determine"
     }
 }
 
-validateEmail('someone@gmail.com', {mxResolver: nodeResolver});
+const result = await validateEmail('someone@gmail.com', {
+    mxResolver: nodeResolver
+});
 ```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
